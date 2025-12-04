@@ -1,0 +1,10 @@
+# Sample device inventory for the NetAuto tool.
+devices:
+  - name: R1
+    ip: 192.0.2.10
+    device_type: cisco_ios
+    port: 22
+  - name: R2
+    ip: 192.0.2.11
+    device_type: cisco_ios
+    port: 22
