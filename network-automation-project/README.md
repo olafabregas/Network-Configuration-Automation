@@ -1,4 +1,4 @@
-NetAuto – Network Automation CLI Tool
+##NetAuto – Network Automation CLI Tool
 NetAuto is a modular Python-based automation utility designed to streamline common operational tasks on Cisco IOS devices.
 It provides a simple command‑line workflow for configuring interfaces, performing connectivity tests, managing OSPF settings, and backing up device configurations — all over secure SSH connections.
 
