@@ -16,10 +16,16 @@ if TYPE_CHECKING:
     class NetmikoTimeoutException(BaseException):
         ...
 else:
-    from netmiko.ssh_exception import (  # type: ignore[import-untyped]
-        NetmikoAuthenticationException,
-        NetmikoTimeoutException,
-    )
+    try:
+        from netmiko.ssh_exception import (  # type: ignore[import-untyped]
+            NetmikoAuthenticationException,
+            NetmikoTimeoutException,
+        )
+    except ModuleNotFoundError:  # Netmiko >= 4.3 relocated exceptions
+        from netmiko.exceptions import (  # type: ignore[import-untyped]
+            NetmikoAuthenticationException,
+            NetmikoTimeoutException,
+        )
 
 logger = logging.getLogger(__name__)
 

@@ -1,10 +1,22 @@
-# Sample device inventory for the NetAuto tool.
 devices:
   - name: R1
-    ip: 192.0.2.10
-    device_type: cisco_ios
-    port: 22
+    ip: 10.1.12.1
+    username: cisco
+    password: cisco
+    enable_secret: cisco
+    device_type: cisco_ios_telnet
+
   - name: R2
-    ip: 192.0.2.11
-    device_type: cisco_ios
-    port: 22
+    ip: 10.1.12.2
+    username: cisco
+    password: cisco
+    enable_secret: cisco
+    device_type: cisco_ios_telnet
+
+  - name: R3
+    ip: 10.1.23.2
+    username: cisco
+    password: cisco
+    enable_secret: cisco
+    device_type: cisco_ios_telnet
+ 

@@ -1,0 +1,18 @@
+2025-12-05 23:03:46,348 - INFO - Logging initialized at INFO
+2025-12-05 23:03:46,359 - WARNING - Skipping device entry; required keys 'name', 'ip', 'username' are mandatory.
+2025-12-05 23:03:46,359 - WARNING - Skipping device entry; required keys 'name', 'ip', 'username' are mandatory.
+2025-12-05 23:03:46,360 - WARNING - Skipping device entry; required keys 'name', 'ip', 'username' are mandatory.
+2025-12-05 23:03:46,360 - ERROR - No devices found in devices.yaml; exiting.
+2025-12-05 23:08:31,582 - INFO - Logging initialized at INFO
+2025-12-05 23:08:45,299 - INFO - User selected device: R1 (10.1.12.1)
+2025-12-05 23:09:05,507 - ERROR - Failed connecting to 10.1.12.1: TCP connection to device failed.
+
+Common causes of this problem are:
+1. Incorrect hostname or IP address.
+2. Wrong TCP port.
+3. Intermediate firewall blocking access.
+
+Device settings: cisco_ios 10.1.12.1:22
+
+
+2025-12-05 23:09:05,509 - ERROR - Connection attempt failed; exiting.
