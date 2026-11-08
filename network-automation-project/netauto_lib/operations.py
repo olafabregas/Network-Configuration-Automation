@@ -10,11 +10,20 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
-def configure_interface(conn: Any) -> None:
-    """Prompt for interface details and push configuration."""
-    interface = _prompt_interface_name()
-    ip_addr = _prompt_ipv4("IPv4 address: ")
-    mask = _prompt_subnet_mask("Subnet mask (dotted decimal or /prefix): ")
+def configure_interface(
+    conn: Any,
+    interface: str | None = None,
+    ip_addr: str | None = None,
+    mask: str | None = None,
+) -> None:
+    """Prompt for interface details and push configuration.
+
+    Pass ``interface``, ``ip_addr``, and ``mask`` to skip the prompts. The demo
+    walkthrough uses that path; the menu leaves them empty and asks the operator.
+    """
+    interface = _prompt_interface_name() if interface is None else _require_interface(interface)
+    ip_addr = _prompt_ipv4("IPv4 address: ") if ip_addr is None else _require_ipv4(ip_addr)
+    mask = _prompt_subnet_mask("Subnet mask (dotted decimal or /prefix): ") if mask is None else _require_mask(mask)
 
     commands = [
         f"interface {interface}",
@@ -35,10 +44,19 @@ def show_interfaces(conn: Any) -> None:
         print(output)
 
 
-def ping_test(conn: Any, default_count: int = 5) -> None:
-    """Execute a ping test from the router."""
-    destination = _prompt_ipv4("Destination IP: ")
-    repeat = _prompt_ping_count(default_count)
+def ping_test(
+    conn: Any,
+    default_count: int = 5,
+    destination: str | None = None,
+    count: int | None = None,
+) -> None:
+    """Execute a ping test from the router.
+
+    ``destination`` and ``count`` skip the prompts when the caller already has
+    sample values, as the demo walkthrough does.
+    """
+    destination = _prompt_ipv4("Destination IP: ") if destination is None else _require_ipv4(destination)
+    repeat = _prompt_ping_count(default_count) if count is None else _require_positive_int(count, "Ping count")
     logger.info("Pinging %s %s times", destination, repeat)
     output = _send_command(conn, f"ping {destination} repeat {repeat}", "ping test")
     if output is not None:
@@ -60,13 +78,28 @@ def backup_config(conn: Any, hostname: str, backups_dir: str) -> None:
     logger.info("Backup stored at %s", filename)
 
 
-def configure_ospf(conn: Any) -> None:
-    """Configure basic OSPF parameters on the device."""
-    process_id = _prompt_positive_int("OSPF process ID: ")
-    router_id = _prompt_ipv4("Router ID (IPv4): ")
-    network = _prompt_ipv4("Network address (A.B.C.D): ")
-    wildcard = _prompt_wildcard_mask("Wildcard mask: ")
-    area = _prompt_area()
+def configure_ospf(
+    conn: Any,
+    process_id: int | None = None,
+    router_id: str | None = None,
+    network: str | None = None,
+    wildcard: str | None = None,
+    area: str | None = None,
+) -> None:
+    """Configure basic OSPF parameters on the device.
+
+    Any argument left as ``None`` is prompted. The demo walkthrough supplies
+    all of them.
+    """
+    process_id = (
+        _prompt_positive_int("OSPF process ID: ")
+        if process_id is None
+        else _require_positive_int(process_id, "OSPF process ID")
+    )
+    router_id = _prompt_ipv4("Router ID (IPv4): ") if router_id is None else _require_ipv4(router_id)
+    network = _prompt_ipv4("Network address (A.B.C.D): ") if network is None else _require_ipv4(network)
+    wildcard = _prompt_wildcard_mask("Wildcard mask: ") if wildcard is None else _require_ipv4(wildcard)
+    area = _prompt_area() if area is None else _require_area(area)
 
     commands = [
         f"router ospf {process_id}",
@@ -89,51 +122,91 @@ def configure_ospf(conn: Any) -> None:
 def _prompt_interface_name() -> str:
     """Prompt for an interface name and normalize casing."""
     while True:
-        value = input("Interface (e.g. GigabitEthernet0/0): ").strip()
-        if value:
-            normalized = value[0].upper() + value[1:] if len(value) > 1 else value.upper()
-            logger.debug("Interface accepted: %s", normalized)
-            return normalized
-        print("Interface name cannot be empty.")
+        try:
+            normalized = _require_interface(input("Interface (e.g. GigabitEthernet0/0): "))
+        except ValueError as exc:
+            print(exc)
+            continue
+        logger.debug("Interface accepted: %s", normalized)
+        return normalized
 
 
 def _prompt_ipv4(prompt_text: str) -> str:
     """Prompt for an IPv4 address and validate input."""
     while True:
-        candidate = input(prompt_text).strip()
         try:
-            ip_value = str(ipaddress.IPv4Address(candidate))
-            logger.debug("IPv4 accepted: %s", ip_value)
-            return ip_value
+            ip_value = _require_ipv4(input(prompt_text))
         except ipaddress.AddressValueError:
             print("Invalid IPv4 address. Try again.")
+            continue
+        logger.debug("IPv4 accepted: %s", ip_value)
+        return ip_value
 
 
 def _prompt_subnet_mask(prompt_text: str) -> str:
     """Prompt for a subnet mask or prefix length and return dotted decimal."""
     while True:
-        value = input(prompt_text).strip()
-        if not value:
-            print("Value cannot be empty.")
-            continue
         try:
-            network = ipaddress.IPv4Network(f"0.0.0.0/{value}", strict=False)
-            mask_value = str(network.netmask)
-            logger.debug("Subnet mask accepted: %s", mask_value)
-            return mask_value
-        except (ipaddress.AddressValueError, ValueError):
+            mask_value = _require_mask(input(prompt_text))
+        except ValueError:
             print("Invalid subnet or mask. Use dotted decimal or prefix length.")
+            continue
+        logger.debug("Subnet mask accepted: %s", mask_value)
+        return mask_value
 
 
 def _prompt_positive_int(prompt_text: str) -> int:
     """Prompt until a positive integer is entered."""
     while True:
-        value = input(prompt_text).strip()
-        if value.isdigit() and int(value) > 0:
-            number = int(value)
+        raw = input(prompt_text).strip()
+        if raw.isdigit():
+            try:
+                number = _require_positive_int(int(raw), prompt_text)
+            except ValueError:
+                print("Enter a positive integer.")
+                continue
             logger.debug("Positive integer accepted: %s", number)
             return number
         print("Enter a positive integer.")
+
+
+def _require_interface(value: str) -> str:
+    """Normalize an interface name or raise ``ValueError`` when it is empty."""
+    text = value.strip()
+    if not text:
+        raise ValueError("Interface name cannot be empty.")
+    return text[0].upper() + text[1:] if len(text) > 1 else text.upper()
+
+
+def _require_ipv4(value: str) -> str:
+    """Return a canonical IPv4 address or raise ``AddressValueError``."""
+    return str(ipaddress.IPv4Address(value.strip()))
+
+
+def _require_mask(value: str) -> str:
+    """Return a dotted-decimal mask from a mask or prefix length."""
+    token = value.strip()
+    if not token:
+        raise ValueError("Value cannot be empty.")
+    if token.startswith("/"):
+        token = token[1:]
+    network = ipaddress.IPv4Network(f"0.0.0.0/{token}", strict=False)
+    return str(network.netmask)
+
+
+def _require_positive_int(value: int, label: str) -> int:
+    """Return ``value`` when it is a positive integer."""
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValueError(f"{label} must be a positive integer.")
+    return value
+
+
+def _require_area(value: str) -> str:
+    """Return a non-empty OSPF area id."""
+    area = value.strip()
+    if not area:
+        raise ValueError("Area cannot be empty.")
+    return area
 
 
 def _prompt_ping_count(default_count: int) -> int:
