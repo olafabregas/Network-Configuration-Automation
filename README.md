@@ -1,159 +1,174 @@
-# NetAuto – Network Automation CLI Tool
+# NetAuto
 
-NetAuto is a modular Python-based automation tool designed to streamline common operational tasks on Cisco IOS devices.  
-It provides a structured command-line workflow for configuration changes, troubleshooting, and routine device operations, built with maintainability and clarity in mind.
+NetAuto is a command-line tool for everyday Cisco IOS tasks: set an interface IPv4 address, show interface status, ping from the router, save the running config, and configure OSPF.
 
----
+You can try the whole menu on a laptop. Demo mode uses a built-in two-router lab and does not need GNS3, hardware, SSH, a `.env` file, or a password.
 
-## 1. Overview
+## Try it now
 
-NetAuto enables engineers to automate repetitive network tasks using a simple CLI interface.  
-The tool interacts with routers over SSH, using a device inventory and environment variables to maintain separation between code, configuration, and credentials.
+Requires Python 3.10 or newer. If the `python` command is missing, use `python3` in the commands below.
 
-Key design principles include:
-
-- Modular architecture  
-- Safe configuration workflows  
-- Clear input validation  
-- Structured logging  
-- Extensibility for future features  
-
-NetAuto is suitable for use in lab environments, GNS3 simulations, and small-scale operational networks.
-
----
-
-## 2. Features
-
-### Device Operations
-- Configure interface IPv4 address and subnet mask  
-- Display interface operational status  
-- Conduct router-initiated ping tests  
-- Backup running configuration with timestamped filenames  
-- Configure OSPF (process ID, router ID, network/wildcard, area)
-
-### System-Level Features
-- Multi-device inventory through `devices.yaml`  
-- Secure credential prompting via `getpass`  
-- Centralized logging with file + console output  
-- Automatic creation of log and backup directories  
-- Error handling for timeout, authentication, and invalid input  
-- Clean shutdown of SSH sessions  
-
----
-
-## 3. Project Structure
-netauto/
-├── netauto.py
-├── netauto_lib/
-│ ├── config_loader.py
-│ ├── connection.py
-│ ├── logging_setup.py
-│ ├── operations.py
-│ ├── utils.py
-│ └── init.py
-├── devices.yaml
-├── .env
-├── config.example.env
-└── requirements.txt
-
-- `netauto.py` — main CLI entrypoint  
-- `config_loader.py` — environment + inventory loader  
-- `connection.py` — SSH connection management (Netmiko)  
-- `logging_setup.py` — file + console logging configuration  
-- `operations.py` — interface, OSPF, ping, and backup operations  
-- `utils.py` — device picker and helper utilities  
-
----
-
-## 4. Installation
-
-### Install dependencies
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/olafabregas/Network-Configuration-Automation.git
+cd Network-Configuration-Automation/network-automation-project
+python -m pip install -r requirements.txt
+python netauto.py --demo
+```
 
-Configure environment variables
-Create a .env file or use interactive prompts.
+That command runs every menu action once on simulated router R1 and exits. The same menu is available interactively:
 
-Configure device inventory
-Example devices.yaml:
+```bash
+python netauto.py --demo --interactive
+```
 
+Demo backups land in `demo_backups/` and the demo log in `demo_logs/netauto-demo.log`. Both are labeled as simulated output.
+
+## Use a real lab
+
+Run the same program with no flag. This is the default, and it is the path that talks to devices:
+
+```bash
+cd network-automation-project
+python netauto.py
+```
+
+NetAuto loads `devices.yaml`, asks you to pick a router, prompts for the password with `getpass`, and opens a Netmiko session using that entry's `device_type`. The sample inventory is a telnet lab (`cisco_ios_telnet`). Use `cisco_ios` when the device listens for SSH. The password is prompted on each run. It is not written to disk, read from `.env`, or kept in `devices.yaml`.
+
+Optional file locations and log level live in `.env`. Copy the example and edit the paths if you want; leave passwords out of it.
+
+```bash
+cp config.example.env .env
+```
+
+`config.example.env` documents `BACKUPS_DIR`, `LOGS_DIR`, `DEFAULT_PING_COUNT`, and `LOG_LEVEL`.
+
+## Sample demo output
+
+This is a real `python netauto.py --demo` run. The backup filename's timestamp changes each time.
+
+```text
+--- NetAuto CLI - Network Automation Tool (demo) ---
+Simulated Cisco IOS lab. No SSH, no .env file, and no password prompt.
+Inventory: R1 (10.1.12.1) and R2 (10.1.12.2).
+Backups directory: demo_backups/
+Log file: demo_logs/netauto-demo.log
+
+Demo mode: simulated session for R1 (10.1.12.1). No SSH.
+
+Running each menu action once on R1 with sample values.
+R2 (10.1.12.2) is the neighbor on GigabitEthernet0/0. Use --demo --interactive to open the menu.
+
+
+--- 1/5  Configure interface ---
+Sample: GigabitEthernet0/1, 192.168.10.1, 255.255.255.0
+configure terminal
+Enter configuration commands, one per line.  End with CNTL/Z.
+R1(config)#interface GigabitEthernet0/1
+R1(config-if)#ip address 192.168.10.1 255.255.255.0
+R1(config-if)#no shutdown
+R1(config-if)#end
+R1#
+
+--- 2/5  Show interface status ---
+Sample: show ip interface brief
+Interface              IP-Address      OK? Method Status                Protocol
+GigabitEthernet0/0     10.1.12.1       YES NVRAM  up                    up
+GigabitEthernet0/1     192.168.10.1    YES manual up                    up
+GigabitEthernet0/2     unassigned      YES NVRAM  administratively down down
+Loopback0              1.1.1.1         YES NVRAM  up                    up
+
+--- 3/5  Test ping ---
+Sample: ping 10.1.12.2 repeat 5
+Type escape sequence to abort.
+Sending 5, 100-byte ICMP Echos to 10.1.12.2, timeout is 2 seconds:
+!!!!!
+Success rate is 100 percent (5/5), round-trip min/avg/max = 1/2/4 ms
+
+--- 4/5  Configure OSPF ---
+Sample: process 1, router-id 1.1.1.1, network 10.1.12.0 0.0.0.3 area 0
+configure terminal
+Enter configuration commands, one per line.  End with CNTL/Z.
+R1(config)#router ospf 1
+R1(config-router)#router-id 1.1.1.1
+R1(config-router)#network 10.1.12.0 0.0.0.3 area 0
+R1(config-router)#end
+R1#
+
+--- 5/5  Backup running config ---
+Sample: written under demo_backups/
+Saved running-config to demo_backups/R1_running_20261108-060229.txt
+Simulated backup only. The file was written on this computer, not copied from a router.
+
+Walkthrough complete. No network connection was opened.
+Interactive menu: python netauto.py --demo --interactive
+```
+
+The saved file starts with a banner that says NetAuto generated it locally. The body is IOS-style text for the sample lab, including the interface and OSPF changes from the walkthrough.
+
+## Menu
+
+1. Configure interface (IPv4 address and mask, then `no shutdown`)
+2. Show interface status (`show ip interface brief`)
+3. Test ping
+4. Backup running config
+5. Configure OSPF (process, router ID, network, wildcard, area)
+0. Exit
+
+Input is checked before it is sent: IPv4 addresses, subnet masks (`255.255.255.0` or `/24`), ping counts, and OSPF values.
+
+## Layout
+
+```text
+Network-Configuration-Automation/
+├── README.md
+└── network-automation-project/
+    ├── netauto.py                 # CLI entry point
+    ├── netauto_lib/
+    │   ├── config_loader.py       # .env and devices.yaml
+    │   ├── connection.py          # Netmiko session for the live path
+    │   ├── demo.py                # in-memory R1/R2 lab
+    │   ├── logging_setup.py
+    │   ├── operations.py          # menu actions
+    │   └── utils.py               # device picker
+    ├── devices.yaml               # live inventory
+    ├── config.example.env
+    ├── requirements.txt
+    └── tests/test_demo.py
+```
+
+`--demo` keeps the existing operations and swaps the session. `DemoConnection` implements `send_command` and `send_config_set` in memory, so the menu code is the same one the live path uses. The demo inventory is R1 (`10.1.12.1`) and R2 (`10.1.12.2`). It does not read `devices.yaml`.
+
+## Live inventory
+
+`devices.yaml` lists lab routers. A password field is not part of the file. Example:
+
+```yaml
 devices:
   - name: R1
-    ip: 192.0.2.10
-    device_type: cisco_ios
-    username: admin
-
-  - name: R2
-    ip: 192.0.2.11
-    device_type: cisco_ios
-    username: admin
+    ip: 10.1.12.1
+    username: cisco
+    device_type: cisco_ios_telnet
 ```
----
 
-## 5. Usage
-Run the tool:
+Required keys are `name`, `ip`, and `username`. `device_type` defaults to `cisco_ios` when it is omitted.
 
-python netauto.py
-Menu options include:
+## Logs and backups
 
-Configure interface
+| Run | Log | Backups |
+| --- | --- | --- |
+| `python netauto.py` | `logs/netauto.log` | `backups/<hostname>_running_<UTC timestamp>.txt` |
+| `python netauto.py --demo` | `demo_logs/netauto-demo.log` | `demo_backups/<hostname>_running_<UTC timestamp>.txt` |
 
-Show interface status
+Directories are created on first use. Generated logs and backups are gitignored.
 
-Test ping
+## Tests
 
-Backup running config
+From `network-automation-project`:
 
-Configure OSPF
+```bash
+python -m unittest discover -s tests
+```
 
-Exit
+## License
 
-All operations are logged automatically.
-
----
-
-## 6. Logging & Backups
-Logs stored under:
-
-logs/netauto.log
-Backups stored under:
-
-backups/<hostname>_running_<timestamp>.txt
-This ensures traceability for all operations performed.
-
----
-
-## 7. Design Considerations
-NetAuto was built with the following priorities:
-
-Modularity: Clear separation of responsibilities across modules
-
-Maintainability: Readable, predictable code layout
-
-Security: Credentials are never stored; prompted each run
-
-Extensibility: New operations can be added easily
-
-Accuracy: Validation for IPv4, subnet masks, integers, and OSPF inputs
-
-The codebase reflects patterns used in practical network automation workflows.
-
----
-
-## 8. Future Enhancements
-Planned improvements may include:
-
-Batch configuration capabilities
-
-Multi-device parallel execution
-
-Additional troubleshooting commands
-
-Integration with structured inventories (e.g., YAML groups)
-
-Support for configuration templating
-
----
-
-## 9. License
-This project is available for educational and non-commercial use.
+Educational and non-commercial use.

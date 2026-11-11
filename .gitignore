@@ -1,0 +1,12 @@
+# Local environment. Never commit a real .env.
+.env
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# CLI output. Demo mode writes demo_backups/ and demo_logs/.
+*.log
+demo_backups/
+demo_logs/
+network-automation-project/backups/*.txt

@@ -11,8 +11,17 @@ from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 
-def setup_logging(logs_dir: str = "logs", log_name: str = "netauto.log") -> None:
-    """Configure logging outputs for the CLI tool."""
+def setup_logging(
+    logs_dir: str = "logs",
+    log_name: str = "netauto.log",
+    console_level: int | None = None,
+) -> None:
+    """Configure logging outputs for the CLI tool.
+
+    ``console_level`` overrides the stderr handler only. The log file still
+    follows ``LOG_LEVEL``. Demo mode uses this to keep the walkthrough readable
+    while recording the same events under ``demo_logs/``.
+    """
     log_path = Path(logs_dir)
     log_path.mkdir(parents=True, exist_ok=True)
     log_file = log_path / log_name
@@ -35,7 +44,7 @@ def setup_logging(logs_dir: str = "logs", log_name: str = "netauto.log") -> None
     file_handler.setFormatter(formatter)
 
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(level)
+    console_handler.setLevel(level if console_level is None else console_level)
     console_handler.setFormatter(formatter)
 
     logger.setLevel(level)
@@ -47,7 +56,8 @@ def setup_logging(logs_dir: str = "logs", log_name: str = "netauto.log") -> None
 
 def _already_configured(logger: logging.Logger, log_file: Path) -> bool:
     """Return True if handlers for the target log file already exist (internal)."""
+    target = log_file.resolve()
     for handler in logger.handlers:
-        if isinstance(handler, logging.FileHandler) and handler.baseFilename == str(log_file):
+        if isinstance(handler, logging.FileHandler) and Path(handler.baseFilename).resolve() == target:
             return True
     return False

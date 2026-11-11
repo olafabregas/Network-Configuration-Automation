@@ -43,7 +43,12 @@ def choose_device(devices: list[Device]) -> Optional[Device]:
 
     while True:
         _print_device_menu(devices)
-        selection = input("Select a device number: ").strip()
+        try:
+            selection = input("Select a device number: ").strip()
+        except EOFError:
+            print("\nNo device selected.")
+            logger.info("Device selection ended by EOF.")
+            return None
         index = _safe_int(selection)
         if index is None:
             print("Please enter a valid number.")
