@@ -2,6 +2,10 @@
 
 NetAuto is a command-line tool for everyday Cisco IOS tasks: set an interface IPv4 address, show interface status, ping from the router, save the running config, and configure OSPF.
 
+![NetAuto demo on a dark terminal: typing python netauto.py --demo configures GigabitEthernet0/1, shows the interface table, pings R2, configures OSPF, and saves the running config on simulated router R1. Then python netauto.py --demo --interactive selects R1, shows interface status, and exits.](docs/media/netauto-demo.gif)
+
+[Watch the full demo video](docs/media/netauto-demo.mp4)
+
 You can try the whole menu on a laptop. Demo mode uses a built-in two-router lab and does not need GNS3, hardware, SSH, a `.env` file, or a password.
 
 ## Try it now
